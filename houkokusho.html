@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>修理作業報告書</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    h1 { text-align: center; margin-bottom: 2rem; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+    th, td { border: 1px solid #333; padding: 0.5rem; }
+    th { background-color: #f0f0f0; text-align: left; }
+    .section-title { margin-top: 2rem; font-weight: bold; font-size: 1.1rem; }
+    .small { font-size: 0.9rem; color: #555; }
+  </style>
+</head>
+<body>
+
+<h1>修理作業報告書</h1>
+
+<p class="small">修理ID：<span id="repair_id"></span></p>
+<p class="small">受付日：<span id="received_date"></span>　修理完了日：<span id="completed_date"></span></p>
+
+<div class="section-title">■ 顧客情報</div>
+<table>
+  <tr><th>顧客名</th><td id="customer_name"></td></tr>
+  <tr><th>住所</th><td id="address"></td></tr>
+  <tr><th>電話番号</th><td id="phone"></td></tr>
+</table>
+
+<div class="section-title">■ 修理内容</div>
+<table>
+  <tr><th>修理品</th><td id="product"></td></tr>
+  <tr><th>症状</th><td id="symptom"></td></tr>
+  <tr><th>作業内容</th><td id="work_description"></td></tr>
+</table>
+
+<div class="section-title">■ 使用部品</div>
+<table>
+  <thead>
+    <tr><th>部品名</th><th>数量</th><th>単価</th><th>小計</th></tr>
+  </thead>
+  <tbody id="parts_table">
+  </tbody>
+</table>
+
+<div class="section-title">■ 金額内訳</div>
+<table>
+  <tr><th>作業費</th><td id="work_fee"></td></tr>
+  <tr><th>部品費</th><td id="parts_fee"></td></tr>
+  <tr><th>送料</th><td id="shipping_fee"></td></tr>
+  <tr><th>合計金額</th><td><strong id="total_fee"></strong></td></tr>
+</table>
+
+<div class="section-title">■ 備考</div>
+<p id="notes"></p>
+
+<p style="text-align:right; margin-top: 4rem;">株式会社◯◯◯◯</p>
+
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const recordId = urlParams.get("recordId");
+
+  if (recordId) {
+    const appId = kintone.app.getId();
+    kintone.api(kintone.api.url('/k/v1/record', true), 'GET', { app: appId, id: recordId })
+      .then(function(resp) {
+        const r = resp.record;
+        document.getElementById("repair_id").textContent = r["修理ID"].value;
+        document.getElementById("received_date").textContent = r["受付日"].value;
+        document.getElementById("completed_date").textContent = r["修理完了日"]?.value || "";
+        document.getElementById("customer_name").textContent = r["顧客名"].value;
+        document.getElementById("address").textContent = r["住所"].value;
+        document.getElementById("phone").textContent = r["電話番号"].value;
+        document.getElementById("product").textContent = r["型番"].value;
+        document.getElementById("symptom").textContent = r["故障症状"].value;
+        document.getElementById("work_description").textContent = r["対応内容"].value;
+        document.getElementById("work_fee").textContent = r["作業料金"]?.value || "";
+        document.getElementById("parts_fee").textContent = r["部品小計"]?.value || "";
+        document.getElementById("shipping_fee").textContent = r["送料"]?.value || "";
+        document.getElementById("total_fee").textContent = r["見積合計"]?.value || "";
+        document.getElementById("notes").textContent = r["作業レポート"].value;
+
+        // 部品テーブルの差し込み
+        const parts = r["部品テーブル"]?.value || [];
+        const partsTable = document.getElementById("parts_table");
+        parts.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${row.value["部品名"].value}</td><td>${row.value["数量"].value}</td><td>${row.value["単価"].value}</td><td>${row.value["小計"].value}</td>`;
+          partsTable.appendChild(tr);
+        });
+      });
+  }
+</script>
+
+</body>
+</html>
